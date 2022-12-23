@@ -2,7 +2,6 @@ package sort
 
 import (
 	"bufio"
-	"bytes"
 	"os"
 	"strconv"
 
@@ -45,14 +44,16 @@ func (r *Reader) startDataProcessing() chan int64 {
 		if err != nil {
 			panic(err)
 		}
-		scanner := bufio.NewScanner(bytes.NewReader(mmap))
-		for scanner.Scan() {
-			x, err := strconv.Atoi(scanner.Text())
 
-			if err != nil {
-				panic(err)
+		var n int64
+		for _, b := range mmap {
+			if b == '\n' {
+				data <- n
+				n = 0
+			} else {
+				m := int64(b) - '0'
+				n = (n * 10) + int64(m)
 			}
-			data <- int64(x)
 		}
 	}()
 
