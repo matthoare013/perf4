@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"sync"
 	"time"
 )
 
@@ -40,12 +41,44 @@ func (m *Merge) Merge(outputFile string) error {
 
 	arr := make([]int32, max-min+1)
 
-	for _, r := range m.readers {
-		for i := range r.data {
-			index := m.getIndex(min, i)
-			arr[index]++
+	wg := sync.WaitGroup{}
+	buffer := make(chan []int, 5)
+
+	a := sync.WaitGroup{}
+	a.Add(1)
+	go func() {
+		defer a.Done()
+		for i := range buffer {
+			for _, j := range i {
+				arr[j]++
+			}
 		}
+	}()
+
+	for _, r := range m.readers {
+		r := r
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			s := 1_000
+			buff := make([]int, 0, s)
+			count := 0
+			for i := range r.data {
+				count++
+				index := m.getIndex(min, i)
+				buff = append(buff, index)
+				if count == s-10 {
+					count = 0
+					buffer <- buff
+					buff = make([]int, 0, s)
+				}
+			}
+			buffer <- buff
+		}()
 	}
+	wg.Wait()
+	close(buffer)
+	a.Wait()
 
 	if err := m.writeResults(outputFile, arr, min); err != nil {
 		return err

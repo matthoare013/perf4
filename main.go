@@ -3,17 +3,15 @@ package main
 import (
 	"matthoare013/sort/sort"
 
-	"github.com/pkg/profile"
-
 	"os"
 )
 
 const (
-	outputFile = "result.txt"
+	outputFile = "/mnt/ssd/out/matty_result.txt"
 )
 
 func main() {
-	defer profile.Start(profile.ProfilePath(".")).Stop()
+	//defer profile.Start(profile.ProfilePath(".")).Stop()
 
 	args := os.Args
 	if len(args) < 1 {
