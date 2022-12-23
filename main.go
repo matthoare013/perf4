@@ -2,9 +2,10 @@ package main
 
 import (
 	"matthoare013/sort/sort"
-	"os"
 
 	"github.com/pkg/profile"
+
+	"os"
 )
 
 const (

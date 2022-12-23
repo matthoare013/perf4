@@ -38,11 +38,12 @@ func (m *Merge) Merge(outputFile string) error {
 		return err
 	}
 
-	arr := make([]int, max-min+1)
+	arr := make([]int32, max-min+1)
 
 	for _, r := range m.readers {
 		for i := range r.data {
-			arr[m.getIndex(min, i)]++
+			index := m.getIndex(min, i)
+			arr[index]++
 		}
 	}
 
@@ -53,20 +54,20 @@ func (m *Merge) Merge(outputFile string) error {
 	return nil
 }
 
-func (m *Merge) writeResults(fileName string, arr []int, min int64) error {
+func (m *Merge) writeResults(fileName string, arr []int32, min int64) error {
 	f, err := os.Create(fileName)
 	if err != nil {
 		return nil
 	}
 	defer f.Close()
 
-	w := bufio.NewWriterSize(f, 4096*4)
+	w := bufio.NewWriterSize(f, 4096*10)
 
 	for index, i := range arr {
 		if i == 0 {
 			continue
 		}
-		for j := 0; j < i; j++ {
+		for j := int32(0); j < i; j++ {
 			if _, err := w.WriteString(strconv.FormatInt(min+int64(index), 10)); err != nil {
 				return err
 			}
@@ -80,8 +81,8 @@ func (m *Merge) writeResults(fileName string, arr []int, min int64) error {
 	return nil
 }
 
-func (m *Merge) getIndex(min, ts int64) int64 {
-	return ts - min
+func (m *Merge) getIndex(min, ts int64) int {
+	return int(ts - min)
 }
 
 func (m *Merge) minMax() (int64, int64, error) {

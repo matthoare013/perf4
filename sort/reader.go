@@ -13,8 +13,7 @@ type Reader struct {
 	filePath string
 	file     *os.File
 
-	minTs int64
-	data  chan int64
+	data chan int64
 }
 
 func NewReader(fullFilePath string) (*Reader, error) {
@@ -36,7 +35,7 @@ func NewReader(fullFilePath string) (*Reader, error) {
 
 func (r *Reader) startDataProcessing() chan int64 {
 	var (
-		data = make(chan int64, 2_000)
+		data = make(chan int64, 1_000)
 	)
 
 	go func() {
