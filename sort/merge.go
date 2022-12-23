@@ -2,12 +2,18 @@ package sort
 
 import (
 	"bufio"
+	"context"
 	"errors"
 	"fmt"
 	"os"
-	"strconv"
 	"sync"
 	"time"
+
+	"golang.org/x/sync/semaphore"
+)
+
+var (
+	byteArray = make([]byte, 0, 20)
 )
 
 type Merge struct {
@@ -55,12 +61,17 @@ func (m *Merge) Merge(outputFile string) error {
 		}
 	}()
 
+	sem := semaphore.NewWeighted(4)
 	for _, r := range m.readers {
 		r := r
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			s := 1_000
+			if err := sem.Acquire(context.TODO(), 1); err != nil {
+				panic(err)
+			}
+			defer sem.Release(1)
+			s := 5_000
 			buff := make([]int, 0, s)
 			count := 0
 			for i := range r.data {
@@ -94,17 +105,15 @@ func (m *Merge) writeResults(fileName string, arr []int32, min int64) error {
 	}
 	defer f.Close()
 
-	w := bufio.NewWriterSize(f, 4096*10)
+	w := bufio.NewWriterSize(f, 4096*20)
 
 	for index, i := range arr {
 		if i == 0 {
 			continue
 		}
 		for j := int32(0); j < i; j++ {
-			if _, err := w.WriteString(strconv.FormatInt(min+int64(index), 10)); err != nil {
-				return err
-			}
-			if _, err := w.WriteString("\n"); err != nil {
+			intToByte(min + int64(index))
+			if _, err := w.Write(byteArray); err != nil {
 				return err
 			}
 		}
@@ -112,6 +121,19 @@ func (m *Merge) writeResults(fileName string, arr []int32, min int64) error {
 	w.Flush()
 
 	return nil
+}
+
+func intToByte(a int64) {
+	byteArray = byteArray[:0]
+	for a != 0 {
+		d := a % 10
+		byteArray = append(byteArray, byte(int64('0')+d))
+		a = a / 10
+	}
+	for i, j := 0, len(byteArray)-1; i < j; i, j = i+1, j-1 {
+		byteArray[i], byteArray[j] = byteArray[j], byteArray[i]
+	}
+	byteArray = append(byteArray, '\n')
 }
 
 func (m *Merge) getIndex(min, ts int64) int {

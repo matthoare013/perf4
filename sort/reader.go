@@ -34,7 +34,7 @@ func NewReader(fullFilePath string) (*Reader, error) {
 
 func (r *Reader) startDataProcessing() chan int64 {
 	var (
-		data = make(chan int64, 1_000)
+		data = make(chan int64, 500)
 	)
 
 	go func() {

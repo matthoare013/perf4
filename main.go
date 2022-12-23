@@ -12,7 +12,8 @@ const (
 )
 
 func main() {
-	//defer profile.Start(profile.ProfilePath(".")).Stop()
+	//defer profile.Start(profile.ProfilePath("./pprof/"), profile.CPUProfile).Stop()
+	//debug.SetGCPercent(-1)
 
 	args := os.Args
 	if len(args) < 1 {

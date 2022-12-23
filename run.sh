@@ -1,5 +1,8 @@
 #!/bin/bash
 
+rm -rf ./pprof/
+mkdir ./pprof/
+
 go build main.go
 mv main mittins
 rm -rf result.txt
