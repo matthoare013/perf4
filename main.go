@@ -3,6 +3,8 @@ package main
 import (
 	"matthoare013/sort/sort"
 	"os"
+
+	"github.com/pkg/profile"
 )
 
 const (
@@ -10,7 +12,7 @@ const (
 )
 
 func main() {
-	//defer profile.Start(profile.ProfilePath(".")).Stop()
+	defer profile.Start(profile.ProfilePath(".")).Stop()
 
 	args := os.Args
 	if len(args) < 1 {
