@@ -99,7 +99,7 @@ func (m *Merge) Merge(outputFile string) error {
 }
 
 func (m *Merge) writeResults(fileName string, arr []int32, min int64) error {
-	f, err := os.Create(fileName)
+	f, err := os.OpenFile(fileName, os.O_RDWR|os.O_CREATE, 0755)
 	if err != nil {
 		return nil
 	}
@@ -111,8 +111,9 @@ func (m *Merge) writeResults(fileName string, arr []int32, min int64) error {
 		if i == 0 {
 			continue
 		}
+
+		intToByte(min + int64(index))
 		for j := int32(0); j < i; j++ {
-			intToByte(min + int64(index))
 			if _, err := w.Write(byteArray); err != nil {
 				return err
 			}
