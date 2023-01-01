@@ -1,8 +1,7 @@
 package main
 
 import (
-	"matthoare013/sort/sort"
-
+	"matthoare013/sort/fsort"
 	"os"
 
 	"github.com/pkg/profile"
@@ -23,7 +22,7 @@ func main() {
 	}
 
 	files := os.Args[1:]
-	merge, err := sort.NewMergeSort(files)
+	merge, err := fsort.NewMergeSort(files)
 	if err != nil {
 		panic(err)
 	}
