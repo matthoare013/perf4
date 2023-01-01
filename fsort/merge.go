@@ -46,22 +46,15 @@ func (m *Merge) Merge(outputFile string) error {
 	}
 
 	arr := make([]int32, max-min+1)
-
-	wg := sync.WaitGroup{}
-	buffer := make(chan []int32, 5)
-
-	a := sync.WaitGroup{}
-	a.Add(1)
-	go func() {
-		defer a.Done()
-		for i := range buffer {
-			for _, j := range i {
-				arr[j]++
-			}
+	addResult := func(add []int32) {
+		for _, i := range add {
+			arr[i]++
 		}
-	}()
+	}
 
-	sem := semaphore.NewWeighted(10)
+	mu := sync.Mutex{}
+	wg := sync.WaitGroup{}
+	sem := semaphore.NewWeighted(5)
 	for _, r := range m.readers {
 		r := r
 		wg.Add(1)
@@ -71,25 +64,25 @@ func (m *Merge) Merge(outputFile string) error {
 				panic(err)
 			}
 			defer sem.Release(1)
-			s := 5_000
-			buff := make([]int32, 0, s)
-			count := 0
+
+			size := 10_000
+			buff := make([]int32, 0, size)
 			data := r.dataProcessing(min)
 			for i := range data {
-				count++
 				buff = append(buff, i)
-				if count == s-10 {
-					count = 0
-					buffer <- buff
-					buff = make([]int32, 0, s)
+				if len(buff)-10 > size {
+					mu.Lock()
+					addResult(buff)
+					mu.Unlock()
+					buff = buff[:0]
 				}
 			}
-			buffer <- buff
+			mu.Lock()
+			addResult(buff)
+			mu.Unlock()
 		}()
 	}
 	wg.Wait()
-	close(buffer)
-	a.Wait()
 
 	if err := m.writeResults(outputFile, arr, min); err != nil {
 		return err
