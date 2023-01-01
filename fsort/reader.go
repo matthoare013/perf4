@@ -32,25 +32,20 @@ func NewReader(fullFilePath string) (*Reader, error) {
 	return reader, nil
 }
 
-func (r *Reader) dataProcessing(minTs int64) chan int32 {
-	data := make(chan int32, 10000)
+func (r *Reader) dataProcessing(minTs, maxTs int64) []int {
+	arr := make([]int, maxTs-minTs+1)
 
-	go func() {
-		defer close(data)
+	var (
+		position = 0
+	)
+	for position < len(r.mmap) {
+		var ts int64
+		ts, position = r.readLine(position)
+		index := int32(ts - minTs)
+		arr[index]++
+	}
 
-		var (
-			position = 0
-		)
-
-		for position < len(r.mmap) {
-			var ts int64
-			ts, position = r.readLine(position)
-
-			data <- int32(ts - minTs)
-		}
-	}()
-
-	return data
+	return arr
 }
 
 func (r *Reader) GetMinTs() int64 {

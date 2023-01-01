@@ -45,17 +45,13 @@ func (m *Merge) Merge(outputFile string) error {
 		return err
 	}
 
-	arr := make([]int32, max-min+1)
-	addResult := func(add []int32) {
-		for _, i := range add {
-			arr[i]++
-		}
-	}
+	arr := make([]int, max-min+1)
+	data := make([][]int, len(m.readers))
 
-	mu := sync.Mutex{}
 	wg := sync.WaitGroup{}
 	sem := semaphore.NewWeighted(5)
-	for _, r := range m.readers {
+	for i, r := range m.readers {
+		i := i
 		r := r
 		wg.Add(1)
 		go func() {
@@ -65,24 +61,13 @@ func (m *Merge) Merge(outputFile string) error {
 			}
 			defer sem.Release(1)
 
-			size := 10_000
-			buff := make([]int32, 0, size)
-			data := r.dataProcessing(min)
-			for i := range data {
-				buff = append(buff, i)
-				if len(buff)-10 > size {
-					mu.Lock()
-					addResult(buff)
-					mu.Unlock()
-					buff = buff[:0]
-				}
-			}
-			mu.Lock()
-			addResult(buff)
-			mu.Unlock()
+			info := r.dataProcessing(min, max)
+			data[i] = info
 		}()
 	}
 	wg.Wait()
+
+	m.sumArrays(data, arr, 4)
 
 	if err := m.writeResults(outputFile, arr, min); err != nil {
 		return err
@@ -91,7 +76,33 @@ func (m *Merge) Merge(outputFile string) error {
 	return nil
 }
 
-func (m *Merge) writeResults(fileName string, arr []int32, min int64) error {
+func (m *Merge) sumArrays(data [][]int, arr []int, split int) {
+	wg := sync.WaitGroup{}
+	rSplit := len(arr) / split
+	for i := 0; i < split; i++ {
+		i := i
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			start := rSplit * i
+			end := start + rSplit
+			if i == split-1 {
+				end = len(arr)
+			}
+
+			for i := start; i < end; i++ {
+				var sum int
+				for j := range data {
+					sum += data[j][i]
+				}
+				arr[i] = sum
+			}
+		}()
+	}
+	wg.Wait()
+}
+
+func (m *Merge) writeResults(fileName string, arr []int, min int64) error {
 	f, err := os.OpenFile(fileName, os.O_RDWR|os.O_CREATE, 0755)
 	if err != nil {
 		return nil
@@ -104,9 +115,8 @@ func (m *Merge) writeResults(fileName string, arr []int32, min int64) error {
 		if i == 0 {
 			continue
 		}
-
 		intToByte(min + int64(index))
-		for j := int32(0); j < i; j++ {
+		for j := 0; j < i; j++ {
 			if _, err := w.Write(byteArray); err != nil {
 				return err
 			}
