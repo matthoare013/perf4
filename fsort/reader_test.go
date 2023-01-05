@@ -72,7 +72,7 @@ func TestReadFile(t *testing.T) {
 	min := reader.GetMinTs()
 	max := time.UnixMilli(min).Add(time.Hour * 24)
 
-	data := reader.dataProcessing(min, max.UnixMilli())
+	data := reader.dataProcessing(min, max.UnixMilli(), nil)
 	for d := range data {
 		//fmt.Println(d)
 		_ = d

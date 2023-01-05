@@ -9,6 +9,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/golang-collections/collections/stack"
 	"golang.org/x/sync/semaphore"
 )
 
@@ -45,11 +46,20 @@ func (m *Merge) Merge(outputFile string) error {
 		return err
 	}
 
+	stack := stack.New()
+
 	arr := make([]int, max-min+1)
-	data := make([][]int, len(m.readers))
+	arrayLen := 5
+	data := make([][]int, arrayLen)
+	for i := 0; i < arrayLen; i++ {
+		data[i] = make([]int, max-min+1)
+		stack.Push(i % arrayLen)
+	}
 
 	wg := sync.WaitGroup{}
-	sem := semaphore.NewWeighted(5)
+	sem := semaphore.NewWeighted(int64(arrayLen))
+	mu := sync.Mutex{}
+
 	for i, r := range m.readers {
 		i := i
 		r := r
@@ -59,10 +69,18 @@ func (m *Merge) Merge(outputFile string) error {
 			if err := sem.Acquire(context.TODO(), 1); err != nil {
 				panic(err)
 			}
-			defer sem.Release(1)
+			mu.Lock()
+			index := stack.Pop().(int)
+			mu.Unlock()
 
-			info := r.dataProcessing(min, max)
-			data[i] = info
+			defer sem.Release(1)
+			defer func() {
+				mu.Lock()
+				stack.Push(i % arrayLen)
+				mu.Unlock()
+			}()
+
+			r.dataProcessing(min, max, data[index])
 		}()
 	}
 	wg.Wait()
