@@ -1,7 +1,6 @@
 package fsort
 
 import (
-	"fmt"
 	"os"
 
 	"github.com/edsrzf/mmap-go"
@@ -34,7 +33,6 @@ func NewReader(fullFilePath string) (*Reader, error) {
 }
 
 func (r *Reader) dataProcessing(minTs, maxTs int64, arr []int) []int {
-	fmt.Println(len(arr))
 	var (
 		position = 0
 	)
