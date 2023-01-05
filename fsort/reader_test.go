@@ -8,7 +8,25 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func BenchmarkReadLine(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		b.StopTimer()
+		r := &Reader{}
+		var a []byte
+		for j := 0; j < 13; j++ {
+			a = append(a, '1')
+		}
+		a = append(a, '\n')
+		r.mmap = a
+		b.StartTimer()
+
+		_, _ = r.readLine(0)
+	}
+}
+
 func TestReadLine(t *testing.T) {
+	now := time.Now().UnixMilli()
+	input := fmt.Sprintf(`%d\n%d\n`, now, now)
 	tests := []struct {
 		name          string
 		mmap          []byte
@@ -17,19 +35,19 @@ func TestReadLine(t *testing.T) {
 		expectedTs     int64
 		expectedOffset int
 	}{
+		// {
+		// 	name:           "basic",
+		// 	mmap:           []byte(input),
+		// 	startPosition:  0,
+		// 	expectedTs:     now,
+		// 	expectedOffset: 14,
+		// },
 		{
 			name:           "basic",
-			mmap:           []byte{'1', '2', '3', '\n'},
-			startPosition:  0,
-			expectedTs:     123,
-			expectedOffset: 4,
-		},
-		{
-			name:           "basic",
-			mmap:           []byte{'1', '2', '3', '\n', '4', '5', '6', '\n'},
-			startPosition:  4,
-			expectedTs:     456,
-			expectedOffset: 8,
+			mmap:           []byte(input),
+			startPosition:  15,
+			expectedTs:     now,
+			expectedOffset: 14 + 14 + 1,
 		},
 	}
 
@@ -56,7 +74,8 @@ func TestReadFile(t *testing.T) {
 
 	data := reader.dataProcessing(min, max.UnixMilli())
 	for d := range data {
-		fmt.Println(d)
+		//fmt.Println(d)
+		_ = d
 	}
 }
 

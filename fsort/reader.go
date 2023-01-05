@@ -54,24 +54,26 @@ func (r *Reader) GetMinTs() int64 {
 }
 
 func (r *Reader) readLine(startPos int) (int64, int) {
-	newLine := true
-
-	var n int64
-	b := r.mmap[startPos]
-	var i int
-	for newLine {
-		if b == '\n' {
-			newLine = false
-			i++
-			continue
-		} else {
-			m := int64(b) - '0'
-			n = (n * 10) + int64(m)
-			i++
-			b = r.mmap[i+startPos]
-		}
+	f := func(p int) int64 {
+		// fmt.Println(r.mmap[p] - '0')
+		return int64(r.mmap[p] - '0')
 	}
-	return n, i + startPos
+
+	n := f(startPos)*1000000000000 +
+		f(startPos+1)*100000000000 +
+		f(startPos+2)*10000000000 +
+		f(startPos+3)*1000000000 +
+		f(startPos+4)*100000000 +
+		f(startPos+5)*10000000 +
+		f(startPos+6)*1000000 +
+		f(startPos+7)*100000 +
+		f(startPos+8)*10000 +
+		f(startPos+9)*1000 +
+		f(startPos+10)*100 +
+		f(startPos+11)*10 +
+		f(startPos+12)
+
+	return n, startPos + 13 + 1
 }
 
 func (r *Reader) Close() error {
