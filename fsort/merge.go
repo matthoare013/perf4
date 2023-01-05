@@ -110,21 +110,47 @@ func (m *Merge) writeResults(fileName string, arr []int, min int64) error {
 	defer f.Close()
 
 	w := bufio.NewWriterSize(f, 4096*20)
+	intToByte(min)
+	var carry int
 
-	for index, i := range arr {
+	for _, i := range arr {
 		if i == 0 {
+			addToByte(1)
 			continue
 		}
-		intToByte(min + int64(index))
+
+		addToByte(carry)
 		for j := 0; j < i; j++ {
 			if _, err := w.Write(byteArray); err != nil {
 				return err
 			}
 		}
+		addToByte(1)
 	}
 	w.Flush()
 
 	return nil
+}
+
+func addToByte(a int) {
+	var carry int
+	pos := len(byteArray) - 2
+	f := func(b int) {
+		n := int(byteArray[pos]) - '0' + b
+		if n >= 10 {
+			n = n - 10
+			carry = 1
+		} else {
+			carry = 0
+		}
+		byteArray[pos] = byte(int64(n) + '0')
+	}
+
+	f(a)
+	for carry == 1 {
+		pos--
+		f(1)
+	}
 }
 
 func intToByte(a int64) {
@@ -138,10 +164,6 @@ func intToByte(a int64) {
 		byteArray[i], byteArray[j] = byteArray[j], byteArray[i]
 	}
 	byteArray = append(byteArray, '\n')
-}
-
-func (m *Merge) getIndex(min, ts int64) int {
-	return int(ts - min)
 }
 
 func (m *Merge) minMax() (int64, int64, error) {

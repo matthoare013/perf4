@@ -3,6 +3,7 @@ package fsort
 import (
 	"fmt"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 )
@@ -50,8 +51,44 @@ func TestReadFile(t *testing.T) {
 	reader, err := NewReader("../files/t.txt")
 	require.NoError(t, err)
 
-	data := reader.dataProcessing(reader.GetMinTs())
+	min := reader.GetMinTs()
+	max := time.UnixMilli(min).Add(time.Hour * 24)
+
+	data := reader.dataProcessing(min, max.UnixMilli())
 	for d := range data {
 		fmt.Println(d)
+	}
+}
+
+func TestAddToByte(t *testing.T) {
+	tests := []struct {
+		input    []byte
+		n        int
+		expected []byte
+	}{
+		{
+			input:    []byte{'1', '2'},
+			n:        1,
+			expected: []byte{'1', '3'},
+		},
+		{
+			input:    []byte{'1', '2'},
+			n:        9,
+			expected: []byte{'2', '1'},
+		},
+		{
+			input:    []byte{'1', '9', '9'},
+			n:        1,
+			expected: []byte{'2', '0', '0'},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(string(test.input), func(t *testing.T) {
+			byteArray = test.input
+			addToByte(test.n)
+			fmt.Println(string(byteArray))
+			require.Equal(t, test.expected, byteArray)
+		})
 	}
 }

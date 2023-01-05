@@ -3,17 +3,15 @@ package main
 import (
 	"matthoare013/sort/fsort"
 	"os"
-
-	"github.com/pkg/profile"
 )
 
 const (
-	//outputFile = "/mnt/ssd/out/matty_result.txt"
-	outputFile = "result.txt"
+	outputFile = "/mnt/ssd/out/matty_result.txt"
+	//outputFile = "result.txt"
 )
 
 func main() {
-	defer profile.Start(profile.ProfilePath("./pprof/"), profile.CPUProfile).Stop()
+	//defer profile.Start(profile.ProfilePath("./pprof/"), profile.CPUProfile).Stop()
 	//debug.SetGCPercent(-1)
 
 	args := os.Args
