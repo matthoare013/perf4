@@ -32,6 +32,15 @@ func NewReader(fullFilePath string) (*Reader, error) {
 	return reader, nil
 }
 
+func (r *Reader) fileLength() int64 {
+	s, err := r.file.Stat()
+	if err != nil {
+		panic(err)
+	}
+
+	return s.Size()
+}
+
 func (r *Reader) dataProcessing(minTs, maxTs int64, arr []int) []int {
 	var (
 		position = 0

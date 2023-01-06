@@ -9,6 +9,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/edsrzf/mmap-go"
 	"github.com/golang-collections/collections/stack"
 	"golang.org/x/sync/semaphore"
 )
@@ -44,6 +45,11 @@ func (m *Merge) Merge(outputFile string) error {
 	min, max, err := m.minMax()
 	if err != nil {
 		return err
+	}
+
+	var totalSize int64
+	for _, r := range m.readers {
+		totalSize += r.fileLength()
 	}
 
 	stack := stack.New()
@@ -87,7 +93,7 @@ func (m *Merge) Merge(outputFile string) error {
 
 	m.sumArrays(data, arr, 4)
 
-	if err := m.writeResults(outputFile, arr, min); err != nil {
+	if err := m.writeResults(outputFile, arr, min, totalSize); err != nil {
 		return err
 	}
 
@@ -120,16 +126,23 @@ func (m *Merge) sumArrays(data [][]int, arr []int, split int) {
 	wg.Wait()
 }
 
-func (m *Merge) writeResults(fileName string, arr []int, min int64) error {
+func (m *Merge) writeResults(fileName string, arr []int, min int64, totalSize int64) error {
 	f, err := os.OpenFile(fileName, os.O_RDWR|os.O_CREATE, 0755)
 	if err != nil {
 		return nil
 	}
-	defer f.Close()
+	pan(f.Truncate(totalSize))
+	f.Close()
+
+	f, err = os.OpenFile(fileName, os.O_RDWR, 0644)
+	if err != nil {
+		return nil
+	}
+	mmap, err := mmap.Map(f, mmap.RDWR, 0)
+	pan(err)
 
 	w := bufio.NewWriterSize(f, 4096*20)
 	intToByte(min)
-	var carry int
 
 	for _, i := range arr {
 		if i == 0 {
@@ -137,7 +150,6 @@ func (m *Merge) writeResults(fileName string, arr []int, min int64) error {
 			continue
 		}
 
-		addToByte(carry)
 		for j := 0; j < i; j++ {
 			if _, err := w.Write(byteArray); err != nil {
 				return err
@@ -145,9 +157,18 @@ func (m *Merge) writeResults(fileName string, arr []int, min int64) error {
 		}
 		addToByte(1)
 	}
-	w.Flush()
+
+	pan(w.Flush())
+	pan(mmap.Unmap())
+	pan(f.Close())
 
 	return nil
+}
+
+func pan(err error) {
+	if err != nil {
+		panic(err)
+	}
 }
 
 func addToByte(a int) {

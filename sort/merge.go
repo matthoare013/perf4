@@ -111,12 +111,9 @@ func (m *Merge) writeResults(fileName string, arr []int32, min int64) error {
 	if err != nil {
 		return nil
 	}
-	f.Close()
 	mmap, _ := mmap.Map(f, mmap.RDWR, 0)
-	defer mmap.Unmap()
 
 	w := bufio.NewWriter(bytes.NewBuffer(mmap))
-
 	for index, i := range arr {
 		if i == 0 {
 			continue
@@ -130,10 +127,18 @@ func (m *Merge) writeResults(fileName string, arr []int32, min int64) error {
 		}
 	}
 
-	w.Flush()
-	mmap.Flush()
+	pan(w.Flush())
+	pan(mmap.Flush())
+	pan(mmap.Unmap())
+	pan(f.Close())
 
 	return nil
+}
+
+func pan(err error) {
+	if err != nil {
+		panic(err)
+	}
 }
 
 func intToByte(a int64) {

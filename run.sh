@@ -3,6 +3,8 @@
 rm -rf ./pprof/
 mkdir ./pprof/
 
+rm result.txt
+
 go build main.go
 mv main mittins
 rm -rf result.txt
