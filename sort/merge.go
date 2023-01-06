@@ -63,7 +63,7 @@ func (m *Merge) Merge(outputFile string) error {
 		}
 	}()
 
-	sem := semaphore.NewWeighted(4)
+	sem := semaphore.NewWeighted(5)
 	for _, r := range m.readers {
 		r := r
 		wg.Add(1)

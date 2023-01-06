@@ -7,8 +7,8 @@ import (
 )
 
 const (
-	//outputFile = "/mnt/ssd/out/matty_result.txt"
-	outputFile = "result.txt"
+	outputFile = "/mnt/ssd/out/matty_result.txt"
+	//outputFile = "result.txt"
 )
 
 func main() {
