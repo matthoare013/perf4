@@ -3,8 +3,7 @@ package main
 import (
 	"matthoare013/sort/fsort"
 	"os"
-
-	"github.com/pkg/profile"
+	"runtime/debug"
 )
 
 const (
@@ -13,8 +12,8 @@ const (
 )
 
 func main() {
-	defer profile.Start(profile.ProfilePath("./pprof/"), profile.CPUProfile).Stop()
-	//debug.SetGCPercent(-1)
+	//defer profile.Start(profile.ProfilePath("./pprof/"), profile.CPUProfile).Stop()
+	debug.SetGCPercent(-1)
 
 	args := os.Args
 	if len(args) < 1 {

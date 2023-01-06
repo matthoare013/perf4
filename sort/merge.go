@@ -2,6 +2,7 @@ package sort
 
 import (
 	"bufio"
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -9,6 +10,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/edsrzf/mmap-go"
 	"golang.org/x/sync/semaphore"
 )
 
@@ -103,9 +105,17 @@ func (m *Merge) writeResults(fileName string, arr []int32, min int64) error {
 	if err != nil {
 		return nil
 	}
-	defer f.Close()
+	f.Close()
 
-	w := bufio.NewWriterSize(f, 4096*20)
+	f, err = os.OpenFile(fileName, os.O_RDWR, 0755)
+	if err != nil {
+		return nil
+	}
+	f.Close()
+	mmap, _ := mmap.Map(f, mmap.RDWR, 0)
+	defer mmap.Unmap()
+
+	w := bufio.NewWriter(bytes.NewBuffer(mmap))
 
 	for index, i := range arr {
 		if i == 0 {
@@ -119,7 +129,9 @@ func (m *Merge) writeResults(fileName string, arr []int32, min int64) error {
 			}
 		}
 	}
+
 	w.Flush()
+	mmap.Flush()
 
 	return nil
 }
