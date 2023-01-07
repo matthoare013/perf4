@@ -75,13 +75,9 @@ var pow = []int64{
 }
 
 func (r *MMapReaderMinBytes) readLine(startPos, minbytes int) (int64, int) {
-	f := func(p int) int64 {
-		return int64(r.mmap[p] - '0')
-	}
-
 	var total int64
 	for i := minbytes; i < 13; i++ {
-		total += int64(f(startPos+i)) * pow[i]
+		total += int64(r.mmap[startPos+i]-'0') * pow[i]
 	}
 
 	return total, startPos + 13 + 1
