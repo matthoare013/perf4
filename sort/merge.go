@@ -128,7 +128,6 @@ func (m *Merge) writeResults(fileName string, arr []int32, min int64) error {
 	}
 
 	pan(w.Flush())
-	pan(mmap.Flush())
 	pan(mmap.Unmap())
 	pan(f.Close())
 

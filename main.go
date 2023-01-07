@@ -1,9 +1,8 @@
 package main
 
 import (
-	"matthoare013/sort/fsort"
+	"matthoare013/sort/merge"
 	"os"
-	"runtime/debug"
 )
 
 const (
@@ -13,7 +12,7 @@ const (
 
 func main() {
 	//defer profile.Start(profile.ProfilePath("./pprof/"), profile.CPUProfile).Stop()
-	debug.SetGCPercent(-1)
+	//debug.SetGCPercent(-1)
 
 	args := os.Args
 	if len(args) < 1 {
@@ -21,12 +20,12 @@ func main() {
 	}
 
 	files := os.Args[1:]
-	merge, err := fsort.NewMergeSort(files)
+	merge, err := merge.NewMergeSort(files, outputFile)
 	if err != nil {
 		panic(err)
 	}
 
-	if err := merge.Merge(outputFile); err != nil {
+	if err := merge.Merge(); err != nil {
 		panic(err)
 	}
 

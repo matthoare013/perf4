@@ -1,11 +1,9 @@
-package fsort
+package merge
 
 import (
-	"bufio"
 	"context"
 	"errors"
 	"fmt"
-	"os"
 	"sync"
 	"time"
 
@@ -14,45 +12,48 @@ import (
 )
 
 var (
-	byteArray = make([]byte, 0, 20)
+	write = func(resultFilePath string) (writer, error) {
+		return NewBasicFileWriter(resultFilePath), nil
+	}
 )
 
 type Merge struct {
-	readers []*Reader
+	readers []*File
+	writer  writer
 }
 
-func NewMergeSort(fullFilePaths []string) (*Merge, error) {
+func NewMergeSort(fullFilePaths []string, resultFilePath string) (*Merge, error) {
 	if len(fullFilePaths) < 1 {
 		return nil, errors.New("at least 1 file required")
 	}
 
-	var readers []*Reader
+	var readers []*File
 	for _, f := range fullFilePaths {
-		r, err := NewReader(f)
+		r, err := NewFile(f)
 		if err != nil {
 			return nil, err
 		}
 		readers = append(readers, r)
 	}
 
+	writer, err := write(resultFilePath)
+	if err != nil {
+		return nil, err
+	}
+
 	return &Merge{
 		readers: readers,
+		writer:  writer,
 	}, nil
 }
 
-func (m *Merge) Merge(outputFile string) error {
+func (m *Merge) Merge() error {
 	min, max, err := m.minMax()
 	if err != nil {
 		return err
 	}
 
-	var totalSize int64
-	for _, r := range m.readers {
-		totalSize += r.fileLength()
-	}
-
 	stack := stack.New()
-
 	arr := make([]int, max-min+1)
 	arrayLen := 5
 	data := make([][]int, arrayLen)
@@ -64,7 +65,6 @@ func (m *Merge) Merge(outputFile string) error {
 	wg := sync.WaitGroup{}
 	sem := semaphore.NewWeighted(int64(arrayLen))
 	mu := sync.Mutex{}
-
 	for i, r := range m.readers {
 		i := i
 		r := r
@@ -85,15 +85,28 @@ func (m *Merge) Merge(outputFile string) error {
 				mu.Unlock()
 			}()
 
-			r.dataProcessing(min, max, data[index])
+			r.reader.process(min, max, data[index])
 		}()
 	}
 	wg.Wait()
 
 	m.sumArrays(data, arr, 4)
 
-	if err := m.writeResults(outputFile, arr, min, totalSize); err != nil {
+	if err := m.writer.write(arr, min); err != nil {
 		return err
+	}
+
+	return nil
+}
+
+func (m *Merge) Close() error {
+	for _, r := range m.readers {
+		if err := r.Close(); err != nil {
+			fmt.Printf("failed to close reader:%v\n", err)
+		}
+	}
+	if err := m.writer.close(); err != nil {
+		fmt.Printf("failed to writer reader:%v\n", err)
 	}
 
 	return nil
@@ -125,76 +138,6 @@ func (m *Merge) sumArrays(data [][]int, arr []int, split int) {
 	wg.Wait()
 }
 
-func (m *Merge) writeResults(fileName string, arr []int, min int64, totalSize int64) error {
-	f, err := os.OpenFile(fileName, os.O_RDWR|os.O_CREATE, 0755)
-	if err != nil {
-		return nil
-	}
-	pan(f.Truncate(totalSize))
-
-	w := bufio.NewWriterSize(f, 4096*20)
-
-	intToByte(min)
-	for _, i := range arr {
-		if i == 0 {
-			addToByte(1)
-			continue
-		}
-
-		for j := 0; j < i; j++ {
-			if _, err := w.Write(byteArray); err != nil {
-				return err
-			}
-		}
-		addToByte(1)
-	}
-
-	pan(w.Flush())
-	pan(f.Close())
-
-	return nil
-}
-
-func pan(err error) {
-	if err != nil {
-		panic(err)
-	}
-}
-
-func addToByte(a int) {
-	var carry int
-	pos := len(byteArray) - 2
-	f := func(b int) {
-		n := int(byteArray[pos]) - '0' + b
-		if n >= 10 {
-			n = n - 10
-			carry = 1
-		} else {
-			carry = 0
-		}
-		byteArray[pos] = byte(int64(n) + '0')
-	}
-
-	f(a)
-	for carry == 1 {
-		pos--
-		f(1)
-	}
-}
-
-func intToByte(a int64) {
-	byteArray = byteArray[:0]
-	for a != 0 {
-		d := a % 10
-		byteArray = append(byteArray, byte(int64('0')+d))
-		a = a / 10
-	}
-	for i, j := 0, len(byteArray)-1; i < j; i, j = i+1, j-1 {
-		byteArray[i], byteArray[j] = byteArray[j], byteArray[i]
-	}
-	byteArray = append(byteArray, '\n')
-}
-
 func (m *Merge) minMax() (int64, int64, error) {
 	min, err := m.getMinTs()
 	if err != nil {
@@ -206,10 +149,10 @@ func (m *Merge) minMax() (int64, int64, error) {
 }
 
 func (m *Merge) getMinTs() (int64, error) {
-	min := m.readers[0].GetMinTs()
+	min := m.readers[0].MinTs()
 
 	for _, r := range m.readers {
-		m := r.GetMinTs()
+		m := r.MinTs()
 		if m < min {
 			min = m
 		}
@@ -218,12 +161,7 @@ func (m *Merge) getMinTs() (int64, error) {
 	return min, nil
 }
 
-func (m *Merge) Close() error {
-	for _, r := range m.readers {
-		if err := r.Close(); err != nil {
-			fmt.Printf("failed to close file: %v \n", err)
-		}
-	}
-
-	return nil
+type writer interface {
+	write(arr []int, min int64) error
+	close() error
 }
