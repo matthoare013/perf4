@@ -4,8 +4,6 @@ import (
 	"matthoare013/sort/merge"
 	"os"
 	"runtime/debug"
-
-	"github.com/pkg/profile"
 )
 
 const (
@@ -14,7 +12,7 @@ const (
 )
 
 func main() {
-	defer profile.Start(profile.ProfilePath("./pprof/"), profile.CPUProfile).Stop()
+	//defer profile.Start(profile.ProfilePath("./pprof/"), profile.CPUProfile).Stop()
 	debug.SetGCPercent(-1)
 
 	args := os.Args

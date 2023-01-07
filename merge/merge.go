@@ -53,6 +53,9 @@ func (m *Merge) Merge() error {
 		return err
 	}
 
+	minBytes := BytesToSkip(min, max)
+	zero := FindNewZero(min, minBytes)
+
 	stack := stack.New()
 	arr := make([]int, max-min+1)
 	arrayLen := 5
@@ -85,7 +88,7 @@ func (m *Merge) Merge() error {
 				mu.Unlock()
 			}()
 
-			r.reader.process(min, max, data[index])
+			r.reader.process(minBytes, zero, data[index])
 		}()
 	}
 	wg.Wait()

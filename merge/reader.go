@@ -43,7 +43,7 @@ func (r *File) Close() error {
 }
 
 type reader interface {
-	process(minTs, maxTs int64, arr []int)
+	process(minBytes int, zero int64, arr []int)
 	GetMinTs() int64
 	close() error
 }

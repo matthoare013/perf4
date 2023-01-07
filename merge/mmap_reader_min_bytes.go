@@ -12,8 +12,6 @@ type MMapReaderMinBytes struct {
 	mmap mmap.MMap
 }
 
-var _ reader = (*MMapReader)(nil)
-
 func NewMMapReaderMinBytes(fullFilePath string) (*MMapReaderMinBytes, error) {
 	f, err := os.Open(fullFilePath)
 	if err != nil {
@@ -42,10 +40,7 @@ func (m *MMapReaderMinBytes) close() error {
 	return nil
 }
 
-func (r *MMapReaderMinBytes) process(minTs, maxTs int64, arr []int) {
-	minBytes := BytesToSkip(minTs, maxTs)
-	zero := FindNewZero(minTs, minBytes)
-
+func (r *MMapReaderMinBytes) process(minBytes int, zero int64, arr []int) {
 	var (
 		position = 0
 	)
