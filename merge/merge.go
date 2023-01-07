@@ -89,6 +89,7 @@ func (m *Merge) Merge() error {
 			}()
 
 			r.reader.process(minBytes, zero, data[index])
+			r.reader.close()
 		}()
 	}
 	wg.Wait()
@@ -103,11 +104,6 @@ func (m *Merge) Merge() error {
 }
 
 func (m *Merge) Close() error {
-	for _, r := range m.readers {
-		if err := r.Close(); err != nil {
-			fmt.Printf("failed to close reader:%v\n", err)
-		}
-	}
 	if err := m.writer.close(); err != nil {
 		fmt.Printf("failed to writer reader:%v\n", err)
 	}
