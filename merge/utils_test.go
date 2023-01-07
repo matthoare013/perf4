@@ -48,6 +48,34 @@ func TestMaxBytesToRead(t *testing.T) {
 
 	fmt.Println(min, max)
 
-	length := MaxBytesToRead(min, max)
-	require.Equal(t, 8, length)
+	length := BytesToSkip(min, max)
+	require.Equal(t, 4, length)
+}
+
+func TestFindNewZero(t *testing.T) {
+	type args struct {
+		minTs         int64
+		numberOfBytes int
+	}
+	tests := []struct {
+		name string
+		args args
+		want int64
+	}{
+		{
+			name: "basic",
+			args: args{
+				minTs:         1671669869739,
+				numberOfBytes: 8,
+			},
+			want: 69869739,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := FindNewZero(tt.args.minTs, tt.args.numberOfBytes); got != tt.want {
+				t.Errorf("FindNewZero() = %v, want %v", got, tt.want)
+			}
+		})
+	}
 }

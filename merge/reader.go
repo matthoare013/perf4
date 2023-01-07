@@ -6,7 +6,7 @@ import (
 
 var (
 	readerFunc = func(fullFilePath string) (reader, error) {
-		return NewFileReader(fullFilePath)
+		return NewMMapReaderMinBytes(fullFilePath)
 	}
 )
 
@@ -18,7 +18,7 @@ type File struct {
 func NewFile(fullFilePath string) (*File, error) {
 	reader, err := readerFunc(fullFilePath)
 	if err != nil {
-		return nil, fmt.Errorf("failed to make reader")
+		return nil, fmt.Errorf("failed to make reader:%v", err)
 	}
 
 	file := &File{

@@ -1,6 +1,8 @@
 package merge
 
-import "fmt"
+import (
+	"strconv"
+)
 
 // byte array assume to have \n at the end
 func AddToByte(a int, byteArray []byte) {
@@ -40,6 +42,21 @@ func IntToByte(a int64) []byte {
 	return byteArray
 }
 
-func MaxBytesToRead(minTs, maxTs int64) int {
-	return len(fmt.Sprintf("%d", maxTs-minTs))
+func BytesToSkip(minTs, maxTs int64) int {
+	max := IntToByte(maxTs)
+	min := IntToByte(minTs)
+
+	for i := 0; i < 13; i++ {
+		if min[i] != max[i] {
+			return i
+		}
+	}
+	return 0
+}
+
+func FindNewZero(minTs int64, numberOfBytes int) int64 {
+	a := IntToByte(minTs)
+	n, _ := strconv.ParseInt(string(a[numberOfBytes:len(a)-1]), 10, 64)
+
+	return n
 }

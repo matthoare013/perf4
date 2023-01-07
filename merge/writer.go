@@ -26,14 +26,11 @@ func (b *BasicFileWriter) write(arr []int, min int64) error {
 	minByte := IntToByte(min)
 
 	for _, i := range arr {
-		if i == 0 {
-			AddToByte(1, minByte)
-			continue
-		}
-
-		for j := 0; j < i; j++ {
-			if _, err := w.Write(minByte); err != nil {
-				return err
+		if i != 0 {
+			for j := 0; j < i; j++ {
+				if _, err := w.Write(minByte); err != nil {
+					return err
+				}
 			}
 		}
 		AddToByte(1, minByte)
