@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"runtime"
 	"sync"
 	"time"
 
@@ -58,7 +59,7 @@ func (m *Merge) Merge() error {
 
 	stack := stack.New()
 	arr := make([]int, max-min+1)
-	arrayLen := 5
+	arrayLen := runtime.NumCPU() + 1
 	data := make([][]int, arrayLen)
 	for i := 0; i < arrayLen; i++ {
 		data[i] = make([]int, max-min+1)
