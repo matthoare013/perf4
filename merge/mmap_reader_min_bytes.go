@@ -43,7 +43,7 @@ func (m *MMapReaderMinBytes) close() error {
 	return nil
 }
 
-func (r *MMapReaderMinBytes) process(minBytes int, zero int64, arr []int) {
+func (r *MMapReaderMinBytes) Process(minBytes int, zero int64, arr []int) {
 	var (
 		position = 0
 	)

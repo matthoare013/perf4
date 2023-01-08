@@ -18,7 +18,7 @@ var (
 )
 
 type Merge struct {
-	readers    []*File
+	readers    []reader
 	writer     writer
 	roundRobin int
 
@@ -30,9 +30,9 @@ func NewMergeSort(fullFilePaths []string, resultFilePath string) (*Merge, error)
 		return nil, errors.New("at least 1 file required")
 	}
 
-	var readers []*File
+	var readers []reader
 	for _, f := range fullFilePaths {
-		r, err := NewFile(f)
+		r, err := NewMMapReaderMinBytes(f)
 		if err != nil {
 			return nil, err
 		}
@@ -92,8 +92,8 @@ func (m *Merge) Merge() error {
 
 			index := m.getIndex()
 			defer m.putBackIndex(index)
-			r.reader.process(minBytes, zero, data[index])
-			r.reader.close()
+			r.Process(minBytes, zero, data[index])
+			r.close()
 		}()
 	}
 	wg.Wait()
@@ -160,19 +160,14 @@ func (m *Merge) minMax() (int64, int64, error) {
 }
 
 func (m *Merge) getMinTs() (int64, error) {
-	min := m.readers[0].MinTs()
+	min := m.readers[0].GetMinTs()
 
 	for _, r := range m.readers {
-		m := r.MinTs()
+		m := r.GetMinTs()
 		if m < min {
 			min = m
 		}
 	}
 
 	return min, nil
-}
-
-type writer interface {
-	write(arr []int, min int64) error
-	close() error
 }

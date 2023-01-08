@@ -5,6 +5,11 @@ import (
 	"os"
 )
 
+type writer interface {
+	write(arr []int, min int64) error
+	close() error
+}
+
 type BasicFileWriter struct {
 	file *os.File
 }

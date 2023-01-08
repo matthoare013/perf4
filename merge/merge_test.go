@@ -31,7 +31,7 @@ func TestPutIndex(t *testing.T) {
 
 func TestMerge_getIndex(t *testing.T) {
 	type fields struct {
-		readers    []*File
+		readers    []reader
 		writer     writer
 		roundRobin int
 		robinChan  chan int
