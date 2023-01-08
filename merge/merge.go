@@ -98,7 +98,7 @@ func (m *Merge) Merge() error {
 	}
 	wg.Wait()
 
-	m.sumArrays(data, arr, 4)
+	m.sumArrays(data, arr, runtime.NumCPU())
 
 	if err := m.writer.write(arr, min); err != nil {
 		return err
