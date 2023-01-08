@@ -8,7 +8,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/golang-collections/collections/stack"
 	"golang.org/x/sync/semaphore"
 )
 
@@ -19,8 +18,11 @@ var (
 )
 
 type Merge struct {
-	readers []*File
-	writer  writer
+	readers    []*File
+	writer     writer
+	roundRobin int
+
+	robinChan chan int
 }
 
 func NewMergeSort(fullFilePaths []string, resultFilePath string) (*Merge, error) {
@@ -42,10 +44,23 @@ func NewMergeSort(fullFilePaths []string, resultFilePath string) (*Merge, error)
 		return nil, err
 	}
 
+	l, c := makeRobin()
+
 	return &Merge{
-		readers: readers,
-		writer:  writer,
+		readers:    readers,
+		writer:     writer,
+		roundRobin: l,
+		robinChan:  c,
 	}, nil
+}
+
+func makeRobin() (int, chan int) {
+	l := runtime.NumCPU() + 1
+	robinChan := make(chan int, l)
+	for i := 0; i < l; i++ {
+		robinChan <- i
+	}
+	return l, robinChan
 }
 
 func (m *Merge) Merge() error {
@@ -57,20 +72,15 @@ func (m *Merge) Merge() error {
 	minBytes := BytesToSkip(min, max)
 	zero := FindNewZero(min, minBytes)
 
-	stack := stack.New()
 	arr := make([]int, max-min+1)
-	arrayLen := runtime.NumCPU() + 1
-	data := make([][]int, arrayLen)
-	for i := 0; i < arrayLen; i++ {
+	data := make([][]int, m.roundRobin)
+	for i := 0; i < m.roundRobin; i++ {
 		data[i] = make([]int, max-min+1)
-		stack.Push(i % arrayLen)
 	}
 
 	wg := sync.WaitGroup{}
-	sem := semaphore.NewWeighted(int64(arrayLen))
-	mu := sync.Mutex{}
-	for i, r := range m.readers {
-		i := i
+	sem := semaphore.NewWeighted(int64(m.roundRobin))
+	for _, r := range m.readers {
 		r := r
 		wg.Add(1)
 		go func() {
@@ -78,17 +88,10 @@ func (m *Merge) Merge() error {
 			if err := sem.Acquire(context.TODO(), 1); err != nil {
 				panic(err)
 			}
-			mu.Lock()
-			index := stack.Pop().(int)
-			mu.Unlock()
-
 			defer sem.Release(1)
-			defer func() {
-				mu.Lock()
-				stack.Push(i % arrayLen)
-				mu.Unlock()
-			}()
 
+			index := m.getIndex()
+			defer m.putBackIndex(index)
 			r.reader.process(minBytes, zero, data[index])
 			r.reader.close()
 		}()
@@ -102,6 +105,14 @@ func (m *Merge) Merge() error {
 	}
 
 	return nil
+}
+
+func (m *Merge) getIndex() int {
+	return <-m.robinChan
+}
+
+func (m *Merge) putBackIndex(index int) {
+	m.robinChan <- index
 }
 
 func (m *Merge) Close() error {
