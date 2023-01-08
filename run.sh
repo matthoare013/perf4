@@ -4,10 +4,10 @@ rm -rf ./pprof/
 mkdir ./pprof/
 
 rm -f result.txt
-rm -f mittins
+#rm -f mittins
 
-go build  main.go
-mv main mittins
+# ./go/go/bin/go build  main.go
+# mv main mittins
 rm -rf result.txt
 
 ./exec.sh ./mittins files/2m.txt files/4m.txt files/8m.txt files/10m.txt files/20m.txt files/40m.txt
